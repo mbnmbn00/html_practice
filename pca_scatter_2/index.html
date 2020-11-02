@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>PCA plot</title>
+  <meta charset="utf-8">
+  <!-- Load d3.js -->
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+  <header>
+    <h1>PCA plot of white and brown rot fungi</h1>
+    <ul>
+      <li>142 white-rot fungi and 39 brown-rot fungi</li>
+      <li>Input data: CAZyme subclass frequencies</li>
+    </ul>
+  </header>
+  <!-- Create a div where the graph will take place -->
+  <!-- Add 2 buttons -->
+  <button id="color_by_ecotype">Color by ecotype</button>
+  <button id="color_by_tax">Color by tax</button>
+  <div id="container">
+    <div id="pca"></div>
+    <div id="legend"></div>
+  </div>
+  <script src="js/pca.js"></script>
+</body>
+</html>
