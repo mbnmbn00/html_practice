@@ -54,7 +54,13 @@ function showData(data) {
   let tax_orders_u = [...new Set(data.map(d => d.tax_order))]
   var color_tax = d3.scaleOrdinal()
     .domain(tax_orders_u)
-    .range(d3.schemeSet2)
+    .range(d3.schemeCategory10)
+  var shape_ecotype = d3.scaleOrdinal()
+    .domain(["white_rot", "brown_rot"])
+    .range(d3.symbols.map(s => d3.symbol().type(s)()))
+  var shape_tax = d3.scaleOrdinal()
+    .domain(tax_orders_u)
+    .range(d3.symbols.map(s => d3.symbol().type(s)()))
 
   // Define the div for the tooltip
   var div = d3.select("body").append("div")	
@@ -63,15 +69,14 @@ function showData(data) {
 
   // Add dots
   svg.append('g')
-    .selectAll("circle")
+    .selectAll(".point")
     .data(data)
     .enter()
-    .append("circle")
-      .attr("cx", d => x(d.PC1))
-      .attr("cy", d => y(d.PC2))
-      .attr("r", 3)
-      .style("fill", d => color_ecotype(d.eco_type))
-      .style("opacity", 0.8)
+    .append("path")
+      .attr("class", "point")
+      .attr("transform", d => `translate(${x(d.PC1)},${y(d.PC2)})`)
+      .attr("fill", d => color_ecotype(d.eco_type))
+      .attr("d", d => shape_ecotype(d.eco_type))
       .on("mouseover", function(event, d) {		
         div.transition()		
           .duration(200)		
@@ -88,21 +93,23 @@ function showData(data) {
   
   // Buttons for change color
   d3.select("#color_by_tax").on("click", function() {
-    svg.selectAll("circle")
+    svg.selectAll(".point")
       .data(data)
-      .style("fill", d => color_tax(d.tax_order))
-    add_legend(svg_legend, tax_orders_u, color_tax)
+      .attr("fill", d => color_tax(d.tax_order))
+      .attr("d", d => shape_tax(d.tax_order))
+    add_legend(svg_legend, tax_orders_u, color_tax, shape_tax)
   });
   d3.select("#color_by_ecotype").on("click", function() {
-    svg.selectAll("circle")
+    svg.selectAll(".point")
       .data(data)
-      .style("fill", d => color_ecotype(d.eco_type))
-    add_legend(svg_legend, ["white_rot", "brown_rot"], color_ecotype)
+      .attr("fill", d => color_ecotype(d.eco_type))
+      .attr("d", d => shape_tax(d.eco_type))
+    add_legend(svg_legend, ["white_rot", "brown_rot"], color_ecotype, shape_ecotype)
   });
 
   // Add Legend
   let svg_legend = create_svg_legend();
-  add_legend(svg_legend, ["white_rot", "brown_rot"], color_ecotype)
+  add_legend(svg_legend, ["white_rot", "brown_rot"], color_ecotype, shape_ecotype)
 }
 
 function create_svg_legend() {
@@ -120,19 +127,18 @@ function create_svg_legend() {
   return svg_legend
 }
 
-function add_legend(svg_legend, legends, color) {
+function add_legend(svg_legend, legends, color, shape) {
   // Remove previous one
   svg_legend.html("");
 
   // Add dots
-  let circle = svg_legend.selectAll("circle")
+  let path = svg_legend.selectAll("path")
   .data(legends)
-  circle.enter()
-  .append("circle")
-    .attr("cx", 50)
-    .attr("cy", (d, i) => 100 + i * 25)
-    .attr("r", 7)
-    .style("fill", d => color(d))
+  path.enter()
+  .append("path")
+    .attr("transform", (d, i) => "translate(50, " + (100 + i * 25) + ")")
+    .attr("fill", d => color(d))
+    .attr("d", d => shape(d))
 
   // Add one dot in the legend for each name.
   // 100 is where the first dot appears. 25 is the distance between dots
