@@ -11,14 +11,16 @@ function runPhylPCA(treeUrl, dataUrl) {
       tree_str: treeStr,
       data_str: dataStr,
     }, function(output) {
-      let pcData = output.map(function(d) {
+      let pcData = output.x.map(function(d) {
         return {
           portal_id : d[0],
           PC1 : +d[1],
           PC2 : +d[2]
         }
       });
-      loadData(pcData).then(showData);
+      loadData(pcData).then(function(data) {
+        showData(data, output.pv12)
+      });
     });
     req.fail(function(){
       alert("R returned an error: " + req.responseText);
@@ -38,14 +40,14 @@ function updatePhylPCA() {
       tree_str: treeStr,
       data_str: dataStr,
     }, function(output) {
-      let newPoints = output.map(function(d) {
+      let newPoints = output.x.map(function(d) {
         return {
           portalId : d[0],
           PC1 : +d[1],
           PC2 : +d[2]
         }
       });
-      updatePoints(newPoints);
+      updatePoints(newPoints, output.pv12[0], output.pv12[1]);
     });
     req.fail(function(){
       alert("R returned an error: " + req.responseText);
