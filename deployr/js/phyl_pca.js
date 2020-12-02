@@ -28,7 +28,7 @@ function runPhylPCA(treeUrl, dataUrl) {
   });
 }
 
-function updatePhylPCA() {
+function updatePhylPCA(data, shape) {
   ocpu.seturl("http://localhost:5656/ocpu/library/runPhylPCA/R")
   $.when(
     $.get(treeUrl),
@@ -47,7 +47,7 @@ function updatePhylPCA() {
           PC2 : +d[2]
         }
       });
-      updatePoints(newPoints, output.pv12[0], output.pv12[1]);
+      updatePoints(data, shape, newPoints, output.pv12[0], output.pv12[1]);
     });
     req.fail(function(){
       alert("R returned an error: " + req.responseText);

@@ -1,4 +1,5 @@
 // Set the dimensions and margins of the graph
+var tt;
 const margin = {top: 25, right: 20, bottom: 35, left: 40};
 const width = 500 - margin.left - margin.right;
 const height = 500 - margin.top - margin.bottom;
@@ -28,7 +29,7 @@ const grid = (g, x, y) => g
     .attr("y2", d => 0.5 + y(d)));
 
 const xAxis = (g, x) => g
-  .attr("transform", `translate(${margin.left},${height + margin.top})`)
+  .attr("transform", `translate(0,${height})`)
   .call(d3.axisBottom(x).ticks(6))
   .call(g => g.select(".domain").attr("display", "none"))
 
@@ -36,7 +37,7 @@ const yAxis = (g, y) => g
   .call(d3.axisLeft(y).ticks(6))
   .call(g => g.select(".domain").attr("display", "none"))
 
-//Read the data
+// Read the data
 function loadData(pcData) {
   let promise = d3.tsv(infoUrl, function(d) {
     return {
@@ -59,7 +60,10 @@ function showData(data, pv12) {
   // append the svg object to the body of the page
   const svg = d3.select("#pca")
     .append("svg")
-      .attr("viewBox", [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom])
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
     
   // Calculate min, max
   const x_min_max = d3.extent(data, d => d.PC1);
@@ -86,15 +90,28 @@ function showData(data, pv12) {
   var div = d3.select("body").append("div")	
     .attr("class", "tooltip")				
     .style("opacity", 0);
+  
+  var clip = svg.append("defs").append("svg:clipPath")
+    .attr("id", "clip")
+    .append("svg:rect")
+    .attr("id", "clip-rect")
+    .attr("x", "0")
+    .attr("y", "0")
+    .attr('width', width)
+    .attr('height', height);
 
   // Add dots
-  const gDot = svg.append("g").attr("id", "gDot")
+  const gDot = svg
+    .append("g")
+      .attr("clip-path", "url(#clip)")
+      .append("g")
+        .attr("id", "gDot")
   gDot.selectAll(".point")
     .data(data)
     .enter()
     .append("path")
       .attr("class", "point")
-      .attr("transform", d => `translate(${x(d.PC1) + margin.left},${y(d.PC2) + margin.top})`)
+      .attr("transform", d => `translate(${x(d.PC1)},${y(d.PC2)})`)
       .attr("fill", d => color(d.ecoTerm))
       .attr("d", d => shape(d.ecoTerm))
       .attr("stroke-width", 500)
@@ -110,24 +127,44 @@ function showData(data, pv12) {
         div.transition()
           .duration(500)		
           .style("opacity", 0);	
+      })
+      .on("click", function(event, d) {
+        console.log(d);
+        url = "https://mycocosm.jgi.doe.gov/mycocosm/annotations/browser/cazy/summary?p=" + d.portalId;
+        window.open(url, '_blank');
       });
 
   // Select for change color
   d3.select("#colorBy").on("change", function() {
-    selectedProperty = d3.select("#colorBy").node().value; 
-    customScale = get_color_shape(data, selectedProperty, 1);
+    let selectedProperty = d3.select("#colorBy").node().value; 
+    let customScale = get_color_shape(data, selectedProperty, tt.k)
     color = customScale[0];
     shape = customScale[1];
     svg.selectAll(".point")
       .data(data)
       .attr("fill", d => color(d[selectedProperty]))
       .attr("d", d => shape(d[selectedProperty]))
+    
+    customScale1 = get_color_shape(data, selectedProperty, 1)
+    color = customScale1[0];
+    shape = customScale1[1];
     addLegend(svg_legend, data, selectedProperty, color, shape)
   });
 
-  // Button for run PCA
+  // Button for run PCA and phylPCA
   d3.select("#runPCA").on("click", function() {
+    $(document).ready(function() {
+      target = document.getElementById('pca');
+      spinner.spin(target);
+    });
     runPCA(data, shape);
+  });
+  d3.select("#runPhylPCA").on("click", function() {
+    $(document).ready(function() {
+      target = document.getElementById('pca');
+      spinner.spin(target);
+    });
+    updatePhylPCA(data, shape);
   });
 
   // Add Legend
@@ -137,18 +174,16 @@ function showData(data, pv12) {
   // Zoom function
   const gx = svg.append("g")
     .attr("id", "gx")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   const gy = svg.append("g")
     .attr("id", "gy")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   const gGrid = svg.append("g")
     .attr("id", "gGrid")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   const zoom = d3.zoom()
     .scaleExtent([0.5, 10])
     .on("zoom", zoomed);
   d3.select("#pca").call(zoom).call(zoom.transform, d3.zoomIdentity);
   function zoomed({transform}) {
+    tt = transform;
     const zx = transform.rescaleX(x).interpolate(d3.interpolateRound);
     const zy = transform.rescaleY(y).interpolate(d3.interpolateRound);
     selectedProperty = d3.select("#colorBy").node().value; 
@@ -183,7 +218,7 @@ function showData(data, pv12) {
 function create_svg_legend() {
   // Select the svg area
   let width = 500;
-  let height = 500;
+  let height = 2000;
   let svg_legend = d3.select("#legend")
     .append("svg")
       .attr("width", width)
@@ -222,6 +257,9 @@ function addLegend(svg_legend, data, colorBy, color, shape) {
 };
 
 function updatePoints(data, shape, newData, PC1Explained, PC2Explained) {
+  // Stop spinner
+  spinner.stop()
+
   let svg = d3.select("#pca")
 
   // Calculate min, max
@@ -239,8 +277,18 @@ function updatePoints(data, shape, newData, PC1Explained, PC2Explained) {
     .domain([y_min_max[0] - 5, y_min_max[1] + 5])
     .range([height, 0])
     .nice();
+  
+  // Restric area
+  var clip = svg.append("defs").append("svg:clipPath")
+    .attr("id", "clip")
+    .append("svg:rect")
+    .attr("id", "clip-rect")
+    .attr("x", "0")
+    .attr("y", "0")
+    .attr('width', width)
+    .attr('height', height);
 
-  const gDot = d3.select("#gDot")
+  const gDot = d3.select("#gDot").attr("clip-path", "url(#clip)")
   const gx = d3.select("#gx")
   const gy = d3.select("#gy")
   const gGrid = d3.select("#gGrid")
@@ -249,7 +297,7 @@ function updatePoints(data, shape, newData, PC1Explained, PC2Explained) {
     .data(newData)
     .transition()
     .duration(1000)
-    .attr("transform", d => `translate(${x(d.PC1) + margin.left},${y(d.PC2) + margin.top})`);
+    .attr("transform", d => `translate(${x(d.PC1)},${y(d.PC2)})`);
   
   const zoom = d3.zoom()
     .scaleExtent([0.5, 10])
@@ -284,6 +332,6 @@ function get_color_shape(data, group, scale) {
     .range(d3.schemeCategory10)
   let shape = d3.scaleOrdinal()
     .domain(groupU)
-    .range(d3.symbols.map(s => d3.symbol().size(150 / scale ** 2).type(s)()))
+    .range(d3.symbols.map(s => d3.symbol().size(100 / scale ** 2).type(s)()))
   return [color, shape]
 }

@@ -1,7 +1,7 @@
 // Inpuf files
 const treeUrl = 'src/single_copy_orthologs_aligned.tree';
-const dataUrl = 'src/3981_cazy_subclass.tsv';
-const infoUrl = 'src/3981_info.tsv';
+const dataUrl = 'src/3015_cazy_subclass.tsv';
+const infoUrl = 'src/3015_info.tsv';
 //const dataUrl = 'src/out_cazy_subclass.tsv';
 //const infoUrl = 'src/all_fungi_info.tsv';
 
