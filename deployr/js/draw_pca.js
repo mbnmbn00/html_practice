@@ -297,13 +297,13 @@ function updatePoints(data, shape, newData, PC1Explained, PC2Explained) {
     .data(newData)
     .transition()
     .duration(1000)
-    .attr("transform", d => `translate(${x(d.PC1)},${y(d.PC2)})`);
   
   const zoom = d3.zoom()
     .scaleExtent([0.5, 10])
     .on("zoom", zoomed);
   d3.select("#pca").call(zoom).call(zoom.transform, d3.zoomIdentity);
   function zoomed({transform}) {
+    tt = transform;
     selectedProperty = d3.select("#colorBy").node().value; 
     customScale = get_color_shape(data, selectedProperty, transform.k);
     shape = customScale[1];
